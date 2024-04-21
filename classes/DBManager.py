@@ -2,34 +2,37 @@ from abc import ABC, abstractmethod
 import psycopg2
 
 
-# class AbstractManager(ABC):
-#     """
-#     Абстрактный класс для управления БД
-#     """
-#
-#     @abstractmethod
-#     def get_companies_and_vacancies_count(self):
-#         """
-#          Метод получает список всех компаний и количество вакансий у каждой компании
-#         :return: БД
-#         """
-#         pass
-#
-#     @abstractmethod
-#     def get_all_vacancies(self):
-#         """
-#         Метод получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию
-#         :return: БД
-#         """
-#         pass
-#
-#     @abstractmethod
-#     def get_avg_salary(self):
-#         """
-#         Метод получает среднюю зарплату по вакансиям
-#         :return: БД
-#         """
-#         pass
+class AbstractManager(ABC):
+    """
+    Абстрактный класс для управления БД
+    """
+
+    @staticmethod
+    @abstractmethod
+    def get_companies_and_vacancies_count(params):
+        """
+         Метод получает список всех компаний и количество вакансий у каждой компании
+        :return: БД
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_all_vacancies(params):
+        """
+        Метод получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию
+        :return: БД
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_avg_salary(params):
+        """
+        Метод получает среднюю зарплату по вакансиям
+        :return: БД
+        """
+        pass
 #
 #     @abstractmethod
 #     def get_vacancies_with_higher_salary(self):
@@ -48,19 +51,48 @@ import psycopg2
 #         pass
 
 
-class DBManager:
+class DBManager(AbstractManager):
     """
     Класс для запросов к БД
     """
 
-    # def create_database(self):
-    #     pass
+    @staticmethod
+    def get_companies_and_vacancies_count(params):
 
-    def create_table(self):
-        pass
+        conn = psycopg2.connect(**params)
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT company_name, open_vacancies FROM employers
+            """)
+            return cur.fetchall()
+        conn.commit()
+        conn.close()
 
-    def filling_out_table(self):
-        pass
+    @staticmethod
+    def get_all_vacancies(params):
+
+        conn = psycopg2.connect(**params)
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT employers.company_name, name, salary_to, url 
+                FROM vacancies
+                INNER JOIN employers ON employers.employer_id=vacancies.employer_id
+            """)
+            return cur.fetchall()
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def get_avg_salary(params):
+        conn = psycopg2.connect(**params)
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT AVG(salary_to) FROM vacancies
+                WHERE salary_to IS NOT NULL
+            """)
+            return cur.fetchall()
+        conn.commit()
+        conn.close()
 
     @staticmethod
     def create_database(database_name: str, params: dict) -> None:
@@ -81,7 +113,6 @@ class DBManager:
                     employer_id SERIAL PRIMARY KEY,
                     company_name VARCHAR(255) NOT NULL,
                     open_vacancies INT,
-                    description TEXT,
                     employer_url TEXT
                 )
             """)
@@ -94,7 +125,7 @@ class DBManager:
                     area VARCHAR(255),
                     salary_from INT,
                     salary_to INT,
-                    salary_currency VARCHAR(10),
+                    salary_currency VARCHAR(100),
                     published_at DATE,
                     schedule VARCHAR(255),
                     experience VARCHAR,
@@ -102,5 +133,37 @@ class DBManager:
                     url TEXT
                 )
             """)
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def add_data_table_database(params, database):
+        conn = psycopg2.connect(**params)
+        with conn.cursor() as cur:
+            for data in database:
+                employer = data['employer']
+                cur.execute("""
+                    INSERT INTO employers (company_name, open_vacancies, employer_url)
+                    VALUES (%s, %s, %s)
+                    RETURNING employer_id
+                """, (
+                    data['employer'].get('name'), data['employer'].get('open_vacancies'),
+                    employer.get('alternate_url'))
+                            )
+                employer_id = cur.fetchone()
+                vacancies = data['vacancies']
+                for vacancy in vacancies:
+                    if vacancy['salary'] is None:
+                        vacancy['salary'] = {'from': 0, 'to': 0, 'currency': 'н/д'}
+                    cur.execute("""
+                        INSERT INTO vacancies (employer_id, name, area, salary_from, salary_to, salary_currency, 
+                        published_at, schedule, experience, requirement, url)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (employer_id, vacancy.get('name'), vacancy.get('area').get('name'),
+                          vacancy['salary'].get('from'), vacancy['salary'].get('to'),
+                          vacancy['salary'].get('currency'), vacancy.get('published_at'),
+                          vacancy.get('schedule').get('name'), vacancy.get('experience').get('name'),
+                          vacancy.get('snippet').get('requirement'), vacancy.get('alternate_url'))
+                                )
         conn.commit()
         conn.close()
