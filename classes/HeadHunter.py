@@ -4,22 +4,14 @@ from abc import ABC, abstractmethod
 
 class AbstractHH(ABC):
     """
-    Абстрактный класс для получения данных с HeadHunter API
+    Абстрактный класс для получения данных с HeadHunterAPI
     """
 
     @abstractmethod
-    def load_data_employer(self, keyword):
+    def load_data(self, employer_id: list) -> None:
         """
-        Метод получения данных о работодателях
-        :return:
-        """
-        pass
-
-    @abstractmethod
-    def load_data(self, employer_id):
-        """
-        Метод получения данных о вакансиях
-        :return:
+        Метод получения данных о работодателях и их вакансиях
+        :return: Сохраняет в классе полученные данные c сайта HeadHunter.ru
         """
         pass
 
@@ -36,7 +28,12 @@ class HH(AbstractHH):
         self.vacancies = []
         self.data = []
 
-    def load_data(self, employers):
+    def load_data(self, employers: list) -> None:
+        """
+        Метод получения данных о работодателях и их вакансиях c сайта HeadHunter.ru
+        :param employers: Список ID работодателей
+        :return: Сохраняет в классе полученные данные c сайта HeadHunter.ru
+        """
         for employer_id in employers:
             response_emp = requests.get(self.url + f'employers/{employer_id}', headers=self.headers)
             data_emp = {'id': response_emp.json().get('id'), 'name': response_emp.json().get('name'),
@@ -54,12 +51,3 @@ class HH(AbstractHH):
                 {'employer': data_emp,
                  'vacancies': self.vacancies}
             )
-
-    def load_data_employer(self, keyword):
-        self.params['text'] = keyword
-        while self.params['page'] != 20:
-            response = requests.get(self.url + 'employers', headers=self.headers, params=self.params)
-            self.params['page'] += 1
-            for employer in response.json()['items']:
-                if employer.get('name') == keyword:
-                    self.data.append(employer)

@@ -19,15 +19,20 @@ db_name = 'headhunter'
 
 
 def main():
+    # Получение данных с HeadHunter.ru
+    print('Получение данных...')
     headhunter = HH()
     headhunter.load_data(employers_id)
     data = headhunter.data
 
+    # Создание новой базы данных
+    print('Создание базы данных...')
     database_hh = DBManager(params)
     database_hh.create_database(db_name)
     database_hh.params.update({'dbname': db_name})
     database_hh.add_data_table_database(data)
 
+    # Работа с базой данных
     print(database_hh.get_companies_and_vacancies_count())
     print(database_hh.get_all_vacancies())
     print(database_hh.get_avg_salary())

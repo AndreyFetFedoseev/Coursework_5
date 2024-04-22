@@ -8,7 +8,7 @@ class AbstractManager(ABC):
     """
 
     @abstractmethod
-    def get_companies_and_vacancies_count(self):
+    def get_companies_and_vacancies_count(self) -> list:
         """
          Метод получает список всех компаний и количество вакансий у каждой компании
         :return: БД
@@ -16,7 +16,7 @@ class AbstractManager(ABC):
         pass
 
     @abstractmethod
-    def get_all_vacancies(self):
+    def get_all_vacancies(self) -> list:
         """
         Метод получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты
         и ссылки на вакансию
@@ -25,7 +25,7 @@ class AbstractManager(ABC):
         pass
 
     @abstractmethod
-    def get_avg_salary(self):
+    def get_avg_salary(self) -> list:
         """
         Метод получает среднюю зарплату по вакансиям
         :return: БД
@@ -33,7 +33,7 @@ class AbstractManager(ABC):
         pass
 
     @abstractmethod
-    def get_vacancies_with_higher_salary(self):
+    def get_vacancies_with_higher_salary(self) -> list:
         """
         Метод получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
         :return: БД
@@ -41,7 +41,7 @@ class AbstractManager(ABC):
         pass
 
     @abstractmethod
-    def get_vacancies_with_keyword(self, keyword):
+    def get_vacancies_with_keyword(self, keyword: str) -> list:
         """
         Метод получает список всех вакансий, в названии которых содержатся переданные в метод слова, например python
         :return: БД
@@ -54,11 +54,14 @@ class DBManager(AbstractManager):
     Класс для запросов к БД
     """
 
-    def __init__(self, params):
+    def __init__(self, params: dict):
         self.params = params
 
-    def get_companies_and_vacancies_count(self):
-
+    def get_companies_and_vacancies_count(self) -> list:
+        """
+        Метод получает список всех компаний и количество вакансий у каждой компании
+        :return: БД
+        """
         conn = psycopg2.connect(**self.params)
         with conn.cursor() as cur:
             cur.execute("""
@@ -69,8 +72,13 @@ class DBManager(AbstractManager):
         conn.close()
         return result
 
-    def get_all_vacancies(self):
+    def get_all_vacancies(self) -> list:
+        """
+        Метод получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты
+        и ссылки на вакансию
+        :return: result БД
 
+        """
         conn = psycopg2.connect(**self.params)
         with conn.cursor() as cur:
             cur.execute("""
@@ -83,7 +91,11 @@ class DBManager(AbstractManager):
         conn.close()
         return result
 
-    def get_avg_salary(self):
+    def get_avg_salary(self) -> list:
+        """
+        Метод получает среднюю зарплату по вакансиям
+        :return: result БД
+        """
         conn = psycopg2.connect(**self.params)
         with conn.cursor() as cur:
             cur.execute("""
@@ -95,11 +107,10 @@ class DBManager(AbstractManager):
         conn.close()
         return result
 
-    def get_vacancies_with_higher_salary(self):
+    def get_vacancies_with_higher_salary(self) -> list:
         """
         Метод получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
-        :return: БД
-        :return:
+        :return: result БД
         """
         conn = psycopg2.connect(**self.params)
         with conn.cursor() as cur:
@@ -114,11 +125,11 @@ class DBManager(AbstractManager):
         conn.close()
         return result
 
-    def get_vacancies_with_keyword(self, keyword):
+    def get_vacancies_with_keyword(self, keyword: str) -> list:
         """
-        Метод получает список всех вакансий, в названии которых содержатся переданные в метод слова, например python
-        :param keyword:
-        :return:
+        Метод получает список всех вакансий, в названии которых содержатся переданные в метод слова, например 'python'
+        :param keyword: Ключевое слово
+        :return: result БД
         """
         conn = psycopg2.connect(**self.params)
         with conn.cursor() as cur:
@@ -132,14 +143,16 @@ class DBManager(AbstractManager):
         return result
 
     def create_database(self, database_name: str) -> None:
+        """
+        Метод создает базу данных с необходимыми таблицами
+        :param database_name: Наименование новой базы данных
+        :return: None
+        """
         conn = psycopg2.connect(dbname='postgres', **self.params)
         conn.autocommit = True
-        cur = conn.cursor()
-
-        cur.execute(f'DROP DATABASE IF EXISTS {database_name}')
-        cur.execute(f'CREATE DATABASE {database_name}')
-
-        cur.close()
+        with conn.cursor() as cur:
+            cur.execute(f'DROP DATABASE IF EXISTS {database_name}')
+            cur.execute(f'CREATE DATABASE {database_name}')
         conn.close()
 
         conn = psycopg2.connect(dbname=f'{database_name}', **self.params)
@@ -172,7 +185,12 @@ class DBManager(AbstractManager):
         conn.commit()
         conn.close()
 
-    def add_data_table_database(self, list_data_hh) -> None:
+    def add_data_table_database(self, list_data_hh: list) -> None:
+        """
+        Метод заполняет базу данных, поступившими данными
+        :param list_data_hh: Список данных
+        :return: None
+        """
         conn = psycopg2.connect(**self.params)
         with conn.cursor() as cur:
             for data in list_data_hh:
