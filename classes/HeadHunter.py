@@ -6,6 +6,7 @@ class AbstractHH(ABC):
     """
     Абстрактный класс для получения данных с HeadHunter API
     """
+
     @abstractmethod
     def load_data_employer(self, keyword):
         """

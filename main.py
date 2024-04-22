@@ -19,20 +19,20 @@ db_name = 'headhunter'
 
 
 def main():
-    # headhunter = HH()
-    # headhunter.load_data(employers_id)
-    # data = headhunter.data
-    #
-    database_hh = DBManager()
-    # database_hh.create_database(db_name, params)
-    params.update({'dbname': db_name})
-    # database_hh.add_data_table_database(params, data)
+    headhunter = HH()
+    headhunter.load_data(employers_id)
+    data = headhunter.data
 
-    print(database_hh.get_companies_and_vacancies_count(params))
-    print(database_hh.get_all_vacancies(params))
-    print(database_hh.get_avg_salary(params))
-    print(database_hh.get_vacancies_with_higher_salary(params))
-    print(database_hh.get_vacancies_with_keyword(params, 'Python'))
+    database_hh = DBManager(params)
+    database_hh.create_database(db_name)
+    database_hh.params.update({'dbname': db_name})
+    database_hh.add_data_table_database(data)
+
+    print(database_hh.get_companies_and_vacancies_count())
+    print(database_hh.get_all_vacancies())
+    print(database_hh.get_avg_salary())
+    print(database_hh.get_vacancies_with_higher_salary())
+    print(database_hh.get_vacancies_with_keyword('Python'))
 
 
 if __name__ == '__main__':
