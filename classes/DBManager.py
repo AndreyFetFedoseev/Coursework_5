@@ -20,7 +20,8 @@ class AbstractManager(ABC):
     @abstractmethod
     def get_all_vacancies(params):
         """
-        Метод получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию
+        Метод получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты
+        и ссылки на вакансию
         :return: БД
         """
         pass
@@ -33,22 +34,24 @@ class AbstractManager(ABC):
         :return: БД
         """
         pass
-#
-#     @abstractmethod
-#     def get_vacancies_with_higher_salary(self):
-#         """
-#         Метод получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
-#         :return: БД
-#         """
-#         pass
-#
-#     @abstractmethod
-#     def get_vacancies_with_keyword(self):
-#         """
-#         Метод получает список всех вакансий, в названии которых содержатся переданные в метод слова, например python
-#         :return: БД
-#         """
-#         pass
+
+    @staticmethod
+    @abstractmethod
+    def get_vacancies_with_higher_salary(params):
+        """
+        Метод получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
+        :return: БД
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_vacancies_with_keyword(params, keyword):
+        """
+        Метод получает список всех вакансий, в названии которых содержатся переданные в метод слова, например python
+        :return: БД
+        """
+        pass
 
 
 class DBManager(AbstractManager):
@@ -64,9 +67,10 @@ class DBManager(AbstractManager):
             cur.execute("""
                 SELECT company_name, open_vacancies FROM employers
             """)
-            return cur.fetchall()
+            result = cur.fetchall()
         conn.commit()
         conn.close()
+        return result
 
     @staticmethod
     def get_all_vacancies(params):
@@ -78,9 +82,10 @@ class DBManager(AbstractManager):
                 FROM vacancies
                 INNER JOIN employers ON employers.employer_id=vacancies.employer_id
             """)
-            return cur.fetchall()
+            result = cur.fetchall()
         conn.commit()
         conn.close()
+        return result
 
     @staticmethod
     def get_avg_salary(params):
@@ -90,9 +95,50 @@ class DBManager(AbstractManager):
                 SELECT AVG(salary_to) FROM vacancies
                 WHERE salary_to IS NOT NULL
             """)
-            return cur.fetchall()
+            result = cur.fetchall()
         conn.commit()
         conn.close()
+        return result
+
+    @staticmethod
+    def get_vacancies_with_higher_salary(params):
+        """
+        Метод получает список всех вакансий, у которых зарплата выше средней по всем вакансиям
+        :return: БД
+        :param params:
+        :return:
+        """
+        conn = psycopg2.connect(**params)
+        with conn.cursor() as cur:
+            cur.execute("""
+                   SELECT * FROM vacancies
+                   WHERE salary_to > (SELECT AVG(salary_to) FROM vacancies
+                                      WHERE salary_to IS NOT NULL AND salary_to > 0)
+                   ORDER BY salary_to DESC 
+            """)
+            result = cur.fetchall()
+        conn.commit()
+        conn.close()
+        return result
+
+    @staticmethod
+    def get_vacancies_with_keyword(params, keyword):
+        """
+        Метод получает список всех вакансий, в названии которых содержатся переданные в метод слова, например python
+        :param keyword:
+        :param params:
+        :return:
+        """
+        conn = psycopg2.connect(**params)
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT * FROM vacancies
+                WHERE name LIKE '%{keyword}%'
+            """)
+            result = cur.fetchall()
+        conn.commit()
+        conn.close()
+        return result
 
     @staticmethod
     def create_database(database_name: str, params: dict) -> None:
@@ -147,14 +193,14 @@ class DBManager(AbstractManager):
                     VALUES (%s, %s, %s)
                     RETURNING employer_id
                 """, (
-                    data['employer'].get('name'), data['employer'].get('open_vacancies'),
+                    employer.get('name'), employer.get('open_vacancies'),
                     employer.get('alternate_url'))
                             )
                 employer_id = cur.fetchone()
                 vacancies = data['vacancies']
                 for vacancy in vacancies:
                     if vacancy['salary'] is None:
-                        vacancy['salary'] = {'from': 0, 'to': 0, 'currency': 'н/д'}
+                        vacancy['salary'] = {'from': 0, 'to': 0, 'currency': 'RUR'}
                     cur.execute("""
                         INSERT INTO vacancies (employer_id, name, area, salary_from, salary_to, salary_currency, 
                         published_at, schedule, experience, requirement, url)

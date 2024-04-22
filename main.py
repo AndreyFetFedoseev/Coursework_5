@@ -31,6 +31,8 @@ def main():
     print(database_hh.get_companies_and_vacancies_count(params))
     print(database_hh.get_all_vacancies(params))
     print(database_hh.get_avg_salary(params))
+    print(database_hh.get_vacancies_with_higher_salary(params))
+    print(database_hh.get_vacancies_with_keyword(params, 'Python'))
 
 
 if __name__ == '__main__':

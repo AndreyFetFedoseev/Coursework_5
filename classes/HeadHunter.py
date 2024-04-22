@@ -6,21 +6,21 @@ class AbstractHH(ABC):
     """
     Абстрактный класс для получения данных с HeadHunter API
     """
-    # @abstractmethod
-    # def load_data_employer(self):
-    #     """
-    #     Метод получения данных о работодателях
-    #     :return:
-    #     """
-    #     pass
-    #
-    # @abstractmethod
-    # def load_data_vacancies(self):
-    #     """
-    #     Метод получения данных о вакансиях
-    #     :return:
-    #     """
-    #     pass
+    @abstractmethod
+    def load_data_employer(self, keyword):
+        """
+        Метод получения данных о работодателях
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def load_data(self, employer_id):
+        """
+        Метод получения данных о вакансиях
+        :return:
+        """
+        pass
 
 
 class HH(AbstractHH):
